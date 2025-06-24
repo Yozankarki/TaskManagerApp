@@ -1,0 +1,64 @@
+﻿@model TaskManager.Web.ViewModels.TaskListViewModel
+
+@{
+    ViewData["Title"] = "Edit Task";
+}
+
+<h2 class="text-center mt-3">Edit Task</h2>
+
+<div class="container mt-4">
+    <form asp-action="Edit" method="post" class="card p-4 shadow-sm">
+        <input type="hidden" name="Task.Id" value="@Model.Task?.Id" />
+
+        <div class="row mb-2">
+            <div class="col">
+                <label>Title</label>
+                <input name="Task.Title" value="@Model.Task?.Title" class="form-control" required />
+            </div>
+            <div class="col">
+                <label>Deadline</label>
+                <input name="Task.Deadline" value="@Model.Task?.Deadline.ToString("yyyy-MM-ddTHH:mm")" type="datetime-local" class="form-control" required />
+            </div>
+        </div>
+
+        <div class="row mb-2">
+            <div class="col">
+                <label>Description</label>
+                <textarea name="Task.Description" class="form-control">@Model.Task?.Description</textarea>
+            </div>
+            <div class="col">
+                <label asp-for="Task.Status">Created By</label>
+                <select asp-for="Task.Status" class="form-control" required>
+                    <option value="Pending">Pending</option>
+                    <option value="Completed">Completed</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="row mb-2">
+            <div class="col">
+                <label>Created By</label>
+                <select name="Task.CreatedById" class="form-control" required>
+                    @foreach (var user in Model.Users!)
+                    {
+                        <option value="@user.Id" selected="@(user.Id == Model.Task?.CreatedById)">@user.Name</option>
+                    }
+                </select>
+            </div>
+            <div class="col">
+                <label>Assigned To</label>
+                <select name="Task.AssignedToId" class="form-control" required>
+                    @foreach (var user in Model.Users!)
+                    {
+                        <option value="@user.Id" selected="@(user.Id == Model.Task?.AssignedToId)">@user.Name</option>
+                    }
+                </select>
+            </div>
+        </div>
+
+        <div class="text-end">
+            <button type="submit" class="btn btn-success">Update Task</button>
+            <a asp-action="Index" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+</div>
