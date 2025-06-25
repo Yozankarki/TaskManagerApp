@@ -10,5 +10,5 @@ connection.start()
 
 connection.on("ReceiveNotification", (message) => {
     console.log("Notification received:", message);
-    alert(message);
+    toastr.info(message);
 });

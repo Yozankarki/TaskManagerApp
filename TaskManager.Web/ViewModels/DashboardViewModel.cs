@@ -4,6 +4,7 @@ namespace TaskManager.Web.ViewModels
 {
     public class DashboardViewModel
     {
+        public int? CurrentUserId { get; set; }
         public required string Title { get; set; }
         public required string Description { get; set; }
 

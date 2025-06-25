@@ -1,6 +1,9 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.EntityFrameworkCore;
 using System.Diagnostics;
+using System.Threading.Tasks;
+using TaskManager.Core.Data;
 using TaskManager.Core.Models;
 using TaskManager.Web.Hubs;
 using TaskManager.Web.ViewModels;
@@ -10,36 +13,44 @@ namespace TaskManager.Web.Controllers
 
     public class HomeController : Controller
     {
-        private static List<User> Users = new() {
-            new User {Id = 1 , Name = "Admin"},
-            new User {Id = 2 , Name = "User1"},
-            new User {Id = 3 , Name = "User2"}
-        };
-
-        private static List<TaskItem> TaskList = new();
+        #region declarations
 
         private readonly IHubContext<NotificationHub> _hub;
         private readonly ILogger<HomeController> _logger;
+        private readonly ApplicationDbContext _context;
 
-        public HomeController(ILogger<HomeController> logger, IHubContext<NotificationHub> hub)
+        public HomeController(ILogger<HomeController> logger, IHubContext<NotificationHub> hub, ApplicationDbContext context)
         {
             _logger = logger;
             _hub = hub;
+            _context = context;
         }
 
-        public IActionResult Index()
+        #endregion
+
+        #region code base
+
+        public async Task<IActionResult> Index(int? currentUserId)
         {
+            var users = await _context.Users.ToListAsync();
+            var tasksQuery = _context.Tasks.AsQueryable();
+
+            if (currentUserId.HasValue)
+            {
+                tasksQuery = tasksQuery.Where(t => t.AssignedToId == currentUserId);
+            }
+
             var model = new DashboardViewModel
             {
                 Title = string.Empty,
                 Description = string.Empty,
                 Deadline = DateTime.Today,
                 CreatedAt = DateTime.UtcNow,
-
-                // Populate the users and tasks
-                Users = Users,
-                Tasks = TaskList.OrderByDescending(t => t.Id).ToList()
+                Users = users,
+                Tasks = await tasksQuery.OrderByDescending(t => t.Id).ToListAsync(),
+                CurrentUserId = currentUserId
             };
+
             return View(model);
         }
 
@@ -53,52 +64,53 @@ namespace TaskManager.Web.Controllers
 
             if (!ModelState.IsValid)
             {
-                model.Users = Users;
-                model.Tasks = TaskList;
-                return BadRequest(model);
+                model.Users = _context.Users.ToList();
+                model.Tasks = _context.Tasks.ToList();
+                return View("Index", model);
             }
 
-            var createdBy = Users.FirstOrDefault(u => u.Id == model.CreatedById);
-            model.CreatedByName = createdBy?.Name;
-
-            var assignedTo = Users.FirstOrDefault(u => u.Id == model.AssignedToId);
-            model.AssignedToName = assignedTo?.Name;
+            var createdBy = await _context.Users.FindAsync(model.CreatedById);
+            var assignedTo = await _context.Users.FindAsync(model.AssignedToId);
 
             var task = new TaskItem
             {
-                Id = TaskList.Count + 1,
                 Title = model.Title,
                 Description = model.Description,
                 Deadline = model.Deadline,
-                CreatedBy = model.CreatedByName,
                 CreatedById = model.CreatedById,
+                CreatedBy = createdBy?.Name,
                 AssignedToId = model.AssignedToId,
-                AssignedTo = model.AssignedToName,
-                CreatedAt = DateTime.UtcNow
+                AssignedTo = assignedTo?.Name,
+                CreatedAt = DateTime.UtcNow,
+                Status = TaskStatuss.Pending
             };
 
-            TaskList.Add(task);
-           // await _hub.Clients.All.SendAsync("ReceiveNotification", $"New task created: {model.Title}");
-            await _hub.Clients.All.SendAsync("ReceiveNotification", $"You have been assigned a new task by: {model.CreatedByName }");
+            _context.Tasks.Add(task);
+            await _context.SaveChangesAsync();
 
+            // Toastr success message
+            TempData["SuccessMessage"] = $"You have been assigned a new task by: {createdBy?.Name}";
+
+            await _hub.Clients.All.SendAsync("ReceiveNotification", TempData["SuccessMessage"]);
             return RedirectToAction("Index");
         }
 
         [HttpPost]
-        public IActionResult Complete(int id)
+        public async Task<IActionResult> Complete(int id)
         {
-            var task = TaskList.FirstOrDefault(t => t.Id == id);
+            var task = await _context.Tasks.FindAsync(id);
             if (task != null)
             {
                 task.Status = TaskStatuss.Completed;
+                await _context.SaveChangesAsync();
             }
             return RedirectToAction("Index");
         }
 
         [HttpGet]
-        public IActionResult Edit(int id)
+        public async Task<IActionResult> Edit(int id)
         {
-            var task = TaskList.FirstOrDefault(t => t.Id == id);
+            var task = await _context.Tasks.FindAsync(id);
             if (task == null)
             {
                 return NotFound();
@@ -106,7 +118,7 @@ namespace TaskManager.Web.Controllers
 
             var model = new TaskListViewModel
             {
-                Users = Users,
+                Users = await _context.Users.ToListAsync(),
                 Task = task
             };
 
@@ -114,35 +126,42 @@ namespace TaskManager.Web.Controllers
         }
 
         [HttpPost]
-        public IActionResult Edit(TaskListViewModel model)
+        public async Task<IActionResult> Edit(TaskListViewModel model)
         {
             var updated = model.Task;
             if (updated == null)
                 return BadRequest();
 
-            var task = TaskList.FirstOrDefault(t => t.Id == updated.Id);
+            var task = await _context.Tasks.FindAsync(updated.Id);
+
             if (task == null)
                 return NotFound();
+
+            var createdBy = await _context.Users.FindAsync(updated.CreatedById);
+            var assignedTo = await _context.Users.FindAsync(updated.AssignedToId);
 
             task.Title = updated.Title;
             task.Description = updated.Description;
             task.Deadline = updated.Deadline;
             task.CreatedById = updated.CreatedById;
             task.AssignedToId = updated.AssignedToId;
-            task.CreatedBy = Users.FirstOrDefault(u => u.Id == updated.CreatedById)?.Name;
-            task.AssignedTo = Users.FirstOrDefault(u => u.Id == updated.AssignedToId)?.Name;
+            task.CreatedBy = createdBy?.Name;
+            task.AssignedTo = assignedTo?.Name;
             task.Status = updated.Status;
+
+            await _context.SaveChangesAsync();
 
             return RedirectToAction("Index");
         }
 
         [HttpPost]
-        public IActionResult Delete(int id)
+        public async Task<IActionResult> Delete(int id)
         {
-            var task = TaskList.FirstOrDefault(t => t.Id == id);
+            var task = await _context.Tasks.FindAsync(id);
             if (task != null)
             {
-                TaskList.Remove(task);
+                _context.Tasks.Remove(task);
+                await _context.SaveChangesAsync();
             }
             return RedirectToAction("Index");
         }
@@ -157,5 +176,7 @@ namespace TaskManager.Web.Controllers
         {
             return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
         }
+
+        #endregion
     }
 }

@@ -1,107 +1,132 @@
-﻿@model TaskManager.Web.ViewModels.DashboardViewModel
+﻿@model TaskManager.Web.ViewModels.DashboardViewModel  
 
-@{
-    ViewData["Title"] = "Home Page";
-}
+@{  
+    ViewData["Title"] = "Home Page";  
+}  
 
-<h2 class="text-center mt-3">Task Management</h2>
+<h2 class="text-center mt-3">Task Management</h2>  
 
-<div class="container mt-4">
-    <form asp-action="Create" method="post" class="card p-4 shadow-sm mb-4">
-        <div class="row mb-2">
-            <div class="col">
-                <label>Title</label>
-                <input asp-for="Title" name="Title" class="form-control" placeholder="Task Title" required />
-            </div>
-            <div class="col">
-                <label>Dead Line</label>
-                <input asp-for="Deadline" name="Deadline" type="datetime-local" class="form-control" required />
-            </div>
-        </div>
-        <div class="row mb-2">
-            <div class="col">
-                <textarea asp-for="Description" name="Description" class="form-control" placeholder="Task Description" required></textarea>
-            </div>
-        </div>
-        <div class="row mb-2">
-            <div class="col">
-                <label>Allocated By</label>
-                <select asp-for="CreatedById" class="form-control" required>
-                    <option value="" disabled selected>Created By</option>
-                    @foreach (var user in Model.Users!)
-                    {
+<div class="container mt-4">  
+    <form asp-action="Create" method="post" class="card p-4 shadow-sm mb-4">  
+        <div class="row mb-2">  
+            <div class="col">  
+                <label>Title</label>  
+                <input asp-for="Title" name="Title" class="form-control" placeholder="Task Title" required />  
+            </div>  
+            <div class="col">  
+                <label>Dead Line</label>  
+                <input asp-for="Deadline" name="Deadline" type="datetime-local" class="form-control" required />  
+            </div>  
+        </div>  
+        <div class="row mb-2">  
+            <div class="col">  
+                <textarea asp-for="Description" name="Description" class="form-control" placeholder="Task Description" required></textarea>  
+            </div>  
+        </div>  
+        <div class="row mb-2">  
+            <div class="col">  
+                <label>Allocated By</label>  
+                <select asp-for="CreatedById" class="form-control" required>  
+                    <option value="" disabled selected>Created By</option>  
+                    @foreach (var user in Model.Users!)  
+                    {  
                         <option value="@user.Id">@user.Name</option>
-                    }
-                </select>
-            </div>
-            <div class="col">
-                <label>Allocated To</label>
-                <select asp-for="AssignedToId" class="form-control" required>
-                    <option value="" disabled selected>Assign To</option>
-                    @foreach (var user in Model.Users!)
-                    {
+                    }  
+                </select>  
+            </div>  
+            <div class="col">  
+                <label>Allocated To</label>  
+                <select asp-for="AssignedToId" class="form-control" required>  
+                    <option value="" disabled selected>Assign To</option>  
+                    @foreach (var user in Model.Users!)  
+                    {  
                         <option value="@user.Id">@user.Name</option>
-                    }
-                </select>
-            </div>
-        </div>
-        <div class="text-end">
-            <button type="submit" class="btn btn-primary">Assign Task</button>
-        </div>
-    </form>
+                    }  
+                </select>  
+            </div>  
+        </div>  
+        <div class="text-end">  
+            <button type="submit" class="btn btn-primary">Assign Task</button>  
+        </div>  
+    </form>  
 
-    <h4>Assigned Tasks</h4>
-    <table class="table table-bordered table-striped">
-        <thead class="table-dark">
-            <tr>
-                <th>Title</th>
-                <th>Description</th>
-                <th>Deadline</th>
-                <th>Created By</th>
-                <th>Assigned To</th>
-                <th>Status</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var task in Model.Tasks)
-            {
-                <tr>
-                    <td>@task.Title</td>
-                    <td>@task.Description</td>
-                    <td>@task.Deadline.ToString("yyyy-MM-dd HH:mm")</td>
-                    <td>@task.CreatedBy</td>
-                    <td>@task.AssignedTo</td>
+    <form method="get" asp-action="Index" class="row mb-3 align-items-end">  
+        <div class="col-md-4">  
+            <label class="form-label">Filter by Assigned User</label>  
+            <select name="currentUserId" class="form-select" onchange="this.form.submit()">  
+                <option value="">-- All Tasks --</option>  
+                @foreach (var user in Model.Users!)  
+                {  
+                    <option value="@user.Id" selected="@(user.Id == Model.CurrentUserId ? "selected" : null)">@user.Name</option>  
+                }  
+            </select>  
+        </div>  
+    </form>  
+
+    <h4>Assigned Tasks</h4>  
+    <table class="table table-bordered table-striped">  
+        <thead class="table-dark">  
+            <tr>  
+                <th>Title</th>  
+                <th>Description</th>  
+                <th>Deadline</th>  
+                <th>Created By</th>  
+                <th>Assigned To</th>  
+                <th>Status</th>  
+                <th>Actions</th>  
+            </tr>  
+        </thead>  
+        <tbody>  
+            @foreach (var task in Model.Tasks)  
+            {  
+                <tr>  
+                    <td>@task.Title</td>  
+                    <td>@task.Description</td>  
                     <td>
-                        @if (task.Status == TaskManager.Core.Models.TaskStatuss.Completed)
+                        @if ((task.Deadline - DateTime.Now).TotalHours <= 48 && task.Status == TaskManager.Core.Models.TaskStatuss.Pending)
                         {
-                            <span class="badge bg-success">Completed</span>
+                            <span class="text-danger fw-bold">
+                                @task.Deadline.ToString("yyyy-MM-dd HH:mm")
+                                <span class="badge bg-danger ms-2">Due Soon</span>
+                            </span>
                         }
                         else
                         {
-                            <span class="badge bg-warning text-dark">Pending</span>
+                            @task.Deadline.ToString("yyyy-MM-dd HH:mm")
                         }
-                    </td>
-                    <td>
-                        @if (task.Status == TaskManager.Core.Models.TaskStatuss.Pending)
-                        {
-                            <form asp-action="Complete" method="post" style="display:inline;">
-                                <input type="hidden" name="id" value="@task.Id" />
-                                <button class="btn btn-sm btn-success">Mark as Completed</button>
-                            </form>
-                        }
+                    </td>  
+                    <td>@task.CreatedBy</td>  
+                    <td>@task.AssignedTo</td>  
+                    <td>  
+                        @if (task.Status == TaskManager.Core.Models.TaskStatuss.Completed)  
+                        {  
+                            <span class="badge bg-success">Completed</span>  
+                        }  
+                        else  
+                        {  
+                            <span class="badge bg-warning text-dark">Pending</span>  
+                        }  
+                    </td>  
+                    <td>  
+                        @if (task.Status == TaskManager.Core.Models.TaskStatuss.Pending)  
+                        {  
+                            <form asp-action="Complete" method="post" style="display:inline;">  
+                                <input type="hidden" name="id" value="@task.Id" />  
+                                <button class="btn btn-sm btn-success">Mark as Completed</button>  
+                            </form>  
+                        }  
 
-                        <a asp-controller="Home" asp-action="Edit" asp-route-id="@task.Id" class="btn btn-sm btn-primary">Edit</a>
+                        <a asp-controller="Home" asp-action="Edit" asp-route-id="@task.Id" class="btn btn-sm btn-primary">Edit</a>  
 
-                        <form asp-action="Delete" method="post" style="display:inline;" onsubmit="return confirm('Are you sure you want to delete this task?');">
-                            <input type="hidden" name="id" value="@task.Id" />
-                            <button class="btn btn-sm btn-danger">Delete</button>
-                        </form>
-                    </td>
-                </tr>
-            }
-        </tbody>
-    </table>
-</div>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/6.0.1/signalr.min.js"></script>
+                        <form asp-action="Delete" method="post" style="display:inline;" onsubmit="return confirm('Are you sure you want to delete this task?');">  
+                            <input type="hidden" name="id" value="@task.Id" />  
+                            <button class="btn btn-sm btn-danger">Delete</button>  
+                        </form>  
+                    </td>  
+                </tr>  
+            }  
+        </tbody>  
+    </table>  
+</div>  
+<script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/6.0.1/signalr.min.js"></script>  
 <script src="~/js/task.js"></script>
