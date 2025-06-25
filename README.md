@@ -89,3 +89,43 @@ The real-time Task Assignment system was implemented in the following steps:
 ## 📸 Screenshot or Demo
 When a task is successfully created, a toast notification is displayed in real-time to all connected users without refreshing the page.
 
+<table>
+  <tr>
+    <td align="center">
+      <a href="Images/Initial%20Project%20View.png" target="_blank">
+        <img src="Images/Initial%20Project%20View.png" alt="Initial Project View" width="250"/>
+      </a>
+      <br/>Basic UI of The Project
+    </td>
+    <td align="center">
+      <a href="Images/When%20task%20is%20assigned.png" target="_blank">
+        <img src="Images/When%20task%20is%20assigned.png" alt="When task is assigned" width="250"/>
+      </a>
+      <br/>When Task Is Assigned
+    </td>
+    <td align="center">
+      <a href="Images/Task%20Filter.png" target="_blank">
+        <img src="Images/Task%20Filter.png" alt="Task Filter" width="250"/>
+      </a>
+      <br/>Task Filtering
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <a href="Images/Deadline%20showcase.png" target="_blank">
+        <img src="Images/Deadline%20showcase.png" alt="Deadline Showcase" width="250"/>
+      </a>
+      <br/>Deadline Showcase
+    </td>
+    <td align="center">
+      <a href="Images/Edit%20View.png" target="_blank">
+        <img src="Images/Edit%20View.png" alt="Edit View" width="250"/>
+      </a>
+      <br/>Edit Assigned Tasks
+    </td>
+    <td align="center">
+      <!-- Empty or add another screenshot here -->
+      <em>More Coming Soon...</em>
+    </td>
+  </tr>
+</table>
